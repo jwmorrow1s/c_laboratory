@@ -14,3 +14,32 @@ So, if you happen to have nix installed and are on a similar system:
     >_: nix develop
 ```
 will get you started
+
+## Dependency Changes
+The directory structure is intended to be as follows
+```
+src
+|_ main.c
+include
+|_ ${...c_impl_files}.c
+|_ ${...c_header_files}.h
+```
+with a flat directory structure. If it gets more complex, the `gen-build.sh` will need to be ammended.
+
+To create a new `build.ninja` file after making changes to files, run:
+```
+ >_: sh gen-build.sh
+```
+for a non-debug build
+or
+```
+ >_: sh gen-build.sh --debug
+```
+for a debug build
+
+and
+```
+>_: ninja
+```
+
+to generate a new executable.
