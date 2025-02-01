@@ -1,0 +1,9 @@
+cflags = -Wextra -Wall -Wfloat-equal -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wstrict-prototypes -Wwrite-strings -Waggregate-return -Wcast-qual -Wswitch-default -Wswitch-enum -Wconversion -Wunreachable-code
+rule cc
+  depfile = $out.d
+  command = gcc -MD -MF $out.d $cflags -c $in -o $out
+rule link
+  command = gcc -o $out $in $libs
+build src/main.o: cc src/main.c
+build include/allocator.o: cc include/allocator.c
+build main: link  src/main.o include/allocator.o
