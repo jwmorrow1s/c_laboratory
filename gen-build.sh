@@ -95,7 +95,7 @@ function debug(){
 
 function format() {
   echo "#! /usr/bin/env bash"
-  echo "clang-format --style=GNU -i --files $(list_all_c_files_one_line ./src ./include)"
+  echo "clang-format -i $(list_all_c_files_one_line ./src ./include)"
 }
 
 parse_args "$@"
