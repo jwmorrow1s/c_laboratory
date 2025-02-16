@@ -5,17 +5,16 @@ Specifically, I'm trying out the [Ninja](https://ninja-build.org/manual.html#_sy
 
 I'm also playing around with different allocators strategies, but focusing on making a serviceable Arena allocator.
 
-
-## Building
+## Project Dependencies
 I just use nix for my specific system at the moment, but that could be easily ammended to be more general. You can see the dependencies I use in my dev shell.
 
 So, if you happen to have nix installed and are on a similar system:
 ```
     >_: nix develop
 ```
-will get you started
+will get you started with necessary dependencies
 
-## Dependency Changes
+## Source Dependency Changes
 The directory structure is intended to be as follows
 ```
 src
@@ -43,3 +42,9 @@ and
 ```
 
 to generate a new executable.
+
+
+## Cleaning built files:
+```
+>_: ninja -t clean
+```

@@ -8,17 +8,18 @@
       pkgs = nixpkgs.legacyPackages.${system};
       mkCDevShell = {}: pkgs.mkShell {
         buildInputs = [
-          pkgs.clang-tools
-	  			pkgs.clang
+          pkgs.clang-tools # for lsp
+	  			pkgs.clang       # for lsp
 	  			pkgs.valgrind
 					pkgs.gdb
           pkgs.gcc
           pkgs.ninja
           pkgs.bash
-          pkgs.binutils
+          pkgs.cppcheck
 				];
       };
   in {
+    
     devShells.${system}.default = mkCDevShell {};
   };
 }

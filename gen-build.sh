@@ -1,16 +1,21 @@
 #!/usr/bin/env bash
 
-function main () {
-  local cflags
-  cflags="-Wextra -Wall -Wfloat-equal -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wstrict-prototypes -Wwrite-strings -Waggregate-return -Wcast-qual -Wswitch-default -Wswitch-enum -Wconversion -Wunreachable-code"
+debug_set=''
+cflags="-Wextra -Wall -Wfloat-equal -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wstrict-prototypes -Wwrite-strings -Waggregate-return -Wcast-qual -Wswitch-default -Wswitch-enum -Wconversion -Wunreachable-code"
 
-  # parse cli args
+function parse_args () {
   for arg in "$@"; do
     if [ "$arg" == "--debug" ]; then
       cflags="$cflags -g -fno-eliminate-unused-debug-symbols" 
+      debug_set='1'
+    fi
+    if [ "$arg" == "--prod" ]; then
+      cflags="$cflags -O3" 
     fi
   done
+}
 
+function build () {
 
   # define variables
   echo "cflags = $cflags"
@@ -47,4 +52,42 @@ function list_all_obj_files(){
   printf "%s" "$ret"
 }
 
-main "$@" > build.ninja
+function clean_sh(){
+  echo "#! /usr/bin/env bash"
+  echo "ninja -t clean"
+  echo "rm build.ninja lint.sh clean.sh memcheck.sh debug.sh"
+}
+
+function lint(){
+  echo "#! /usr/bin/env bash"
+  echo "echo 'running cppcheck...'"
+  echo "cppcheck --std=c99 --suppress=missingIncludeSystem --suppress=checkersReport --enable=all --error-exitcode=1 --language=c ./src"
+  echo "echo 'cppcheck...done'"
+}
+
+function memcheck(){
+  echo "#! /usr/bin/env bash"
+  echo "valgrind --leak-check=full --track-origins=yes --error-exitcode=1 ./main"
+}
+
+function debug(){
+  echo "#! /usr/bin/env bash"
+  if [ "$debug_set" ]; then
+    echo "if [ -f "./main" ]; then "
+    echo "  gdb -tui ./main"
+    echo "else"
+    echo "  echo 'main executable not found. Run \"ninja\" first'"
+    echo "fi"
+  else
+    echo "echo 'not a debug build'"
+    echo "echo 'run \"sh gen-build.sh --debug\" and run this again.'"
+  fi
+}
+
+parse_args "$@"
+
+build > build.ninja
+clean_sh > clean.sh
+lint > lint.sh
+memcheck > memcheck.sh
+debug > debug.sh 
