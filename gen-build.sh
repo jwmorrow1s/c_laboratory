@@ -43,6 +43,15 @@ function build_all_c_files_in_dirs(){
   done
 }
 
+function list_all_c_files_one_line(){
+  local dirs;dirs="$@"
+  for dir in $dirs; do 
+    for cfile in $(ls "$dir"/*.c); do
+      printf "$cfile "
+    done
+  done
+}
+
 function list_all_obj_files(){
   local dirs;dirs="$@"
   local ret;ret=""
@@ -55,7 +64,7 @@ function list_all_obj_files(){
 function clean_sh(){
   echo "#! /usr/bin/env bash"
   echo "ninja -t clean"
-  echo "rm build.ninja lint.sh clean.sh memcheck.sh debug.sh"
+  echo "rm build.ninja lint.sh clean.sh memcheck.sh debug.sh format.sh"
 }
 
 function lint(){
@@ -84,6 +93,11 @@ function debug(){
   fi
 }
 
+function format() {
+  echo "#! /usr/bin/env bash"
+  echo "clang-format --style=GNU -i --files $(list_all_c_files_one_line ./src ./include)"
+}
+
 parse_args "$@"
 
 build > build.ninja
@@ -91,3 +105,4 @@ clean_sh > clean.sh
 lint > lint.sh
 memcheck > memcheck.sh
 debug > debug.sh 
+format > format.sh 
