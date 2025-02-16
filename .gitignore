@@ -1,4 +1,5 @@
-.ninja*
+*.ninja
+.ninja_*
 *.o
 *.d
 main
@@ -6,3 +7,4 @@ clean.sh
 memcheck.sh
 lint.sh
 debug.sh
+

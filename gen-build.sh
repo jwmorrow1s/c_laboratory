@@ -61,7 +61,7 @@ function clean_sh(){
 function lint(){
   echo "#! /usr/bin/env bash"
   echo "echo 'running cppcheck...'"
-  echo "cppcheck --std=c99 --suppress=missingIncludeSystem --suppress=checkersReport --enable=all --error-exitcode=1 --language=c ./src"
+  echo "cppcheck --std=c99 --suppress=missingIncludeSystem --suppress=checkersReport --enable=all --enable=style --error-exitcode=1 --language=c ./src"
   echo "echo 'cppcheck...done'"
 }
 
