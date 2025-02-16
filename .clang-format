@@ -1,4 +1,4 @@
-# RIPPED FROM KERNEL
+# [altered] Base RIPPED FROM KERNEL
 # SPDX-License-Identifier: GPL-2.0
 #
 # clang-format configuration file. Intended for clang-format >= 11.
@@ -718,7 +718,6 @@ IncludeIsMainRegex: '(Test)?$'
 IndentCaseLabels: false
 IndentGotoLabels: false
 IndentPPDirectives: None
-IndentWidth: 8
 IndentWrappedFunctionNames: false
 JavaScriptQuotes: Leave
 JavaScriptWrapImports: true
@@ -760,6 +759,7 @@ SpacesInCStyleCastParentheses: false
 SpacesInParentheses: false
 SpacesInSquareBrackets: false
 Standard: Cpp03
-TabWidth: 8
-UseTab: Always
+UseTab: Never
+IndentWidth: 2
+TabWidth: 2
 ...
