@@ -1,4 +1,5 @@
 #ifndef ARENA_H_
+#define ARENA_H_
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
