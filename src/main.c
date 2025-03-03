@@ -1,19 +1,16 @@
-#include "../include/allocator.h"
-#include <stdio.h>
-#include <string.h>
+#include "../include/arena.h"
 
 int main(void)
 {
-  Allocator allocator;
+  M_arena_module(Arenas);
 
-  arena_allocator_init(&allocator, 13);
+  Arena* arena = Arenas.init_arena(1);
 
-  char *allocated_bytes = M_alloc(&allocator, 13);
-  memcpy(allocated_bytes, "Hello World!", 13);
-  printf("%s\n", allocated_bytes);
+  /* @TODO [ ] currently these are just malloc and free.  */
+  /*            make updates in ../include/arena.h        */
 
-  M_free(&allocator, allocated_bytes);
+  Arenas.arena_alloc(arena, 1);
+  Arenas.deinit_arena(arena);
 
-  arena_allocator_deinit(&allocator);
   return 0;
 }

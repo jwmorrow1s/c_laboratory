@@ -8,4 +8,5 @@ memcheck.sh
 lint.sh
 debug.sh
 format.sh
+vgcore*
 

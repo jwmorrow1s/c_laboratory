@@ -6,7 +6,7 @@ cflags="-Wextra -Wall -Wfloat-equal -Wundef -Wshadow -Wpointer-arith -Wcast-alig
 function parse_args () {
   for arg in "$@"; do
     if [ "$arg" == "--debug" ]; then
-      cflags="$cflags -g -fno-eliminate-unused-debug-symbols" 
+      cflags="$cflags -O0 -g -fno-eliminate-unused-debug-symbols" 
       debug_set='1'
     fi
     if [ "$arg" == "--prod" ]; then
@@ -64,7 +64,7 @@ function list_all_obj_files(){
 function clean_sh(){
   echo "#! /usr/bin/env bash"
   echo "ninja -t clean"
-  echo "rm build.ninja lint.sh clean.sh memcheck.sh debug.sh format.sh"
+  echo "rm -f build.ninja lint.sh clean.sh memcheck.sh debug.sh format.sh vgcore*"
 }
 
 function lint(){
@@ -83,7 +83,7 @@ function debug(){
   echo "#! /usr/bin/env bash"
   if [ "$debug_set" ]; then
     echo "if [ -f "./main" ]; then "
-    echo "  gdb -tui ./main"
+    echo "  gdb ./main"
     echo "else"
     echo "  echo 'main executable not found. Run \"ninja\" first'"
     echo "fi"

@@ -43,6 +43,14 @@ and
 
 to generate a new executable.
 
+Additionally, 
+
+this script creates a number of utility scripts:
+- `debug.sh`
+- `clean.sh`
+- `memcheck.sh`
+- `lint.sh`
+- `format.sh`
 
 ## Cleaning built files:
 ```
