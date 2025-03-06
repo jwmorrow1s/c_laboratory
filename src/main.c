@@ -4,7 +4,7 @@ int main(void)
 {
   M_arena_module(Arenas);
 
-  Arena* arena = Arenas.init_arena(10);
+  Arena *arena = Arenas.init_arena(10);
 
   /* @TODO [ ] currently these are just malloc and free.  */
   /*            make updates in ../include/arena.h        */

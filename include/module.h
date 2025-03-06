@@ -5,14 +5,14 @@
 /** START HEADER SECTION */
 
 typedef struct Module Module;
-void module_init(Module* self);
+void module_init(Module *self);
 
 struct PublicFunctions {
   void (*print)(void);
 };
 
 struct Module {
-	struct PublicFunctions* f;
+  struct PublicFunctions *f;
 };
 
 /** END HEADER SECTION */
@@ -23,18 +23,18 @@ struct Module {
 
 #ifdef MODULE_IMPLEMENTATION
 
-
-static void print(void){
-	printf("private fn invoked!\n");
+static void print(void)
+{
+  printf("private fn invoked!\n");
 }
 
-
-static struct PublicFunctions public_functions = (struct PublicFunctions) {
-	.print = &print,
+static struct PublicFunctions public_functions = (struct PublicFunctions){
+  .print = &print,
 };
 
-void module_init(Module* self) {
-	self->f = &public_functions;
+void module_init(Module *self)
+{
+  self->f = &public_functions;
 }
 
 #endif /** MODULE_IMPLEMENTATION */
@@ -42,6 +42,5 @@ void module_init(Module* self) {
 /** END IMPL SECTION */
 
 /*---------------------------------------------------------------------------*/
-
 
 #endif /** !MODULE_H_ */

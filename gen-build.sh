@@ -52,6 +52,15 @@ function list_all_c_files_one_line(){
   done
 }
 
+function list_all_h_files_one_line(){
+  local dirs;dirs="$@"
+  for dir in $dirs; do 
+    for hfile in $(ls "$dir"/*.h); do
+      printf "$hfile "
+    done
+  done
+}
+
 function list_all_obj_files(){
   local dirs;dirs="$@"
   local ret;ret=""
@@ -95,7 +104,7 @@ function debug(){
 
 function format() {
   echo "#! /usr/bin/env bash"
-  echo "clang-format -i $(list_all_c_files_one_line ./src ./include)"
+  echo "clang-format -i $(list_all_c_files_one_line ./src ./include) $(list_all_h_files_one_line ./include)"
 }
 
 parse_args "$@"
