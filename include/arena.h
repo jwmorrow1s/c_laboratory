@@ -83,19 +83,23 @@ static void *arena_alloc(Arena *self, size_t size)
   }
   Arena *effective_arena = self;
   while ((effective_arena->cursor + size) >= effective_arena->capacity) {
-    /** mark current arena as used up */
-    effective_arena->cursor = effective_arena->capacity;
-    /** allocate another arena */
-    Arena *next = init_arena(size);
-    /** assign new arena to next ptr */
-    effective_arena->next = next;
-    /** assign the iterator to the newly alloc'd arena */
-    effective_arena = effective_arena->next;
+    if (effective_arena->next)
+      effective_arena = effective_arena->next;
+    else {
+      /** allocate another arena */
+      Arena *next = init_arena(size);
+      effective_arena->next = next;
+      effective_arena = next;
+      break;
+    }
   }
-  /** increment the cursor of the effective arena at this point */
-  effective_arena->cursor += size;
   /** cast first to uint8_t to make the void* aligned to bytes, then cast back to void* for genericity */
-  return (void *)((uint8_t *)effective_arena->data + effective_arena->cursor);
+  void *location_of_requested_memory =
+          (void *)((uint8_t *)effective_arena->data + effective_arena->cursor);
+  /** increment the cursor to the next available section of memory */
+  effective_arena->cursor += size;
+
+  return location_of_requested_memory;
 }
 
 void arena_module_init(ArenaModule *self)
