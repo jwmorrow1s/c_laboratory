@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 debug_set=''
-tests=''
+test_build=''
 cflags="-Wextra -Wall -Wfloat-equal -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wstrict-prototypes -Wwrite-strings -Waggregate-return -Wcast-qual -Wswitch-default -Wswitch-enum -Wconversion -Wunreachable-code"
 source_dirs='src include'
 
@@ -11,9 +11,10 @@ function parse_args () {
       cflags="$cflags -O0 -g -fno-eliminate-unused-debug-symbols" 
       debug_set='1'
     fi
-    if [ "$arg" == "--test-arena" ]; then
+    if [ "$arg" == "--test" ]; then
       cflags="$cflags -O0 -g -fno-eliminate-unused-debug-symbols" 
-      tests="$tests ARENA"
+      debug_set='1'
+      test_build='1'
     fi
     if [ "$arg" == "--prod" ]; then
       cflags="$cflags -O3" 
@@ -22,12 +23,9 @@ function parse_args () {
 }
 
 function build () {
-  local test_macros;test_macros=''
-
-  for test in $tests; do
-    test_macros="$test_macros -D TEST_$test=1"
-  done
-
+  if [ "$test_build" ]; then
+    local test_macros;test_macros="-D PROJECT_TEST_BUILD=1"
+  fi
   # define variables
   echo "cflags = $cflags"
   
@@ -105,7 +103,7 @@ function memcheck(){
 
 function debug(){
   echo "#! /usr/bin/env bash"
-  if [ "$debug_set" ] || [ "$tests" ]; then
+  if [ "$debug_set" ] || [ "$test_build" ]; then
     echo "if [ -f "./main" ]; then "
     echo "  gdb ./main"
     echo "else"

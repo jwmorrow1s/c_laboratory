@@ -26,13 +26,15 @@ struct ArenaModule {
   Arena *(*init_arena)(size_t);
   void (*deinit_arena)(Arena *);
   void *(*arena_alloc)(Arena *, size_t);
+#if defined(PROJECT_TEST_BUILD)
+  size_t (*get_alloc_count)(void);
+  size_t (*get_free_count)(void);
+#endif // PROJECT_TEST_BUILD
 };
 
 void arena_module_init(ArenaModule *self);
 
 /** END HEADER SECTION */
-
-/*---------------------------------------------------------------------------*/
 
 /** START IMPL SECTION */
 
@@ -46,13 +48,42 @@ void arena_module_init(ArenaModule *self);
     }                                               \
   } while (0)
 
+#if defined(PROJECT_TEST_BUILD)
+static uint8_t alloc_count = 0;
+static uint8_t free_count = 0;
+static size_t get_alloc_count(void)
+{
+  return alloc_count;
+}
+static size_t get_free_count(void)
+{
+  return free_count;
+}
+#endif
+
+static void *alloc(size_t size)
+{
+#if defined(PROJECT_TEST_BUILD)
+  alloc_count++;
+#endif // PROJECT_TEST_BUILD
+  return malloc(size);
+}
+
+static void free_mem(void* ptr)
+{
+#if defined(PROJECT_TEST_BUILD)
+  free_count++;
+#endif // PROJECT_TEST_BUILD
+  free(ptr);
+}
+
 static Arena *init_arena(size_t arena_size)
 {
-  Arena *arena = malloc(sizeof(Arena));
+  Arena *arena = alloc(sizeof(Arena));
   M_handle_alloc_failed(arena);
   memset(arena, 0, sizeof(Arena));
 
-  void *data = malloc(arena_size);
+  void *data = alloc(arena_size);
   M_handle_alloc_failed(data);
   memset(data, 0, arena_size);
 
@@ -68,8 +99,8 @@ static void deinit_arena(Arena *self)
   Arena *arena_iter = self;
   while (arena_iter != NULL) {
     Arena *arena_next = arena_iter->next;
-    free(arena_iter->data);
-    free(arena_iter);
+    free_mem(arena_iter->data);
+    free_mem(arena_iter);
     arena_iter = arena_next;
   }
 }
@@ -107,12 +138,14 @@ void arena_module_init(ArenaModule *self)
   self->init_arena = &init_arena;
   self->deinit_arena = &deinit_arena;
   self->arena_alloc = &arena_alloc;
+#if defined(PROJECT_TEST_BUILD)
+  self->get_alloc_count = &get_alloc_count;
+  self->get_free_count = &get_free_count;
+#endif // PROJECT_TEST_BUILD
 }
 
 #endif /** ARENA_IMPLEMENTATION */
 
 /** END IMPL SECTION */
-
-/*---------------------------------------------------------------------------*/
 
 #endif // !ARENA_H_
