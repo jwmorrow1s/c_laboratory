@@ -76,18 +76,18 @@ static void deinit_arena(Arena *self)
 
 static void *arena_alloc(Arena *self, size_t size)
 {
-  if (size >= self->capacity) {
+  if (size > self->capacity) {
     fprintf(stderr,
             "[FATAL] requested size for allocation greater than or equal to configured capacity.\n");
     exit(1);
   }
   Arena *effective_arena = self;
-  while ((effective_arena->cursor + size) >= effective_arena->capacity) {
+  while ((effective_arena->cursor + size) > effective_arena->capacity) {
     if (effective_arena->next)
       effective_arena = effective_arena->next;
     else {
       /** allocate another arena */
-      Arena *next = init_arena(size);
+      Arena *next = init_arena(effective_arena->capacity);
       effective_arena->next = next;
       effective_arena = next;
       break;

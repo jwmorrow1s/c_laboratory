@@ -1,13 +1,19 @@
 #!/usr/bin/env bash
 
 debug_set=''
+tests=''
 cflags="-Wextra -Wall -Wfloat-equal -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wstrict-prototypes -Wwrite-strings -Waggregate-return -Wcast-qual -Wswitch-default -Wswitch-enum -Wconversion -Wunreachable-code"
+source_dirs='src include'
 
 function parse_args () {
   for arg in "$@"; do
     if [ "$arg" == "--debug" ]; then
       cflags="$cflags -O0 -g -fno-eliminate-unused-debug-symbols" 
       debug_set='1'
+    fi
+    if [ "$arg" == "--test-arena" ]; then
+      cflags="$cflags -O0 -g -fno-eliminate-unused-debug-symbols" 
+      tests="$tests ARENA"
     fi
     if [ "$arg" == "--prod" ]; then
       cflags="$cflags -O3" 
@@ -16,6 +22,11 @@ function parse_args () {
 }
 
 function build () {
+  local test_macros;test_macros=''
+
+  for test in $tests; do
+    test_macros="$test_macros -D TEST_$test=1"
+  done
 
   # define variables
   echo "cflags = $cflags"
@@ -23,15 +34,15 @@ function build () {
   ## define rules
   echo "rule cc"
   echo "  depfile = \$out.d"
-  echo "  command = gcc -MD -MF \$out.d \$cflags -c \$in -o \$out"
+  echo "  command = gcc $test_macros -MD -MF \$out.d \$cflags -c \$in -o \$out"
 
   echo "rule link"
   echo "  command = gcc -o \$out \$in \$libs"
 
   # define build recipes
-  build_all_c_files_in_dirs 'src' 'include'
+  build_all_c_files_in_dirs "$source_dirs" 
 
-  echo "build main: link $(list_all_obj_files 'src' 'include')"
+  echo "build main: link $(list_all_obj_files $source_dirs)"
 }
 
 function build_all_c_files_in_dirs(){
@@ -46,18 +57,22 @@ function build_all_c_files_in_dirs(){
 function list_all_c_files_one_line(){
   local dirs;dirs="$@"
   for dir in $dirs; do 
-    for cfile in $(ls "$dir"/*.c); do
-      printf "$cfile "
-    done
+    if [[ $(ls -1 "$dir/" | grep -e '.*\.c') ]]; then
+      for cfile in $(ls "$dir"/*.c); do
+        printf "$cfile "
+      done
+    fi
   done
 }
 
 function list_all_h_files_one_line(){
   local dirs;dirs="$@"
   for dir in $dirs; do 
-    for hfile in $(ls "$dir"/*.h); do
-      printf "$hfile "
-    done
+    if [[ $(ls -1 "$dir/" | grep -e '.*\.h') ]]; then
+      for hfile in $(ls "$dir"/*.h); do
+        printf "$hfile "
+      done
+    fi
   done
 }
 
@@ -90,7 +105,7 @@ function memcheck(){
 
 function debug(){
   echo "#! /usr/bin/env bash"
-  if [ "$debug_set" ]; then
+  if [ "$debug_set" ] || [ "$tests" ]; then
     echo "if [ -f "./main" ]; then "
     echo "  gdb ./main"
     echo "else"
@@ -104,7 +119,7 @@ function debug(){
 
 function format() {
   echo "#! /usr/bin/env bash"
-  echo "clang-format -i $(list_all_c_files_one_line ./src ./include) $(list_all_h_files_one_line ./include)"
+  echo "clang-format -i $(list_all_c_files_one_line $source_dirs) $(list_all_h_files_one_line $source_dirs)"
 }
 
 parse_args "$@"

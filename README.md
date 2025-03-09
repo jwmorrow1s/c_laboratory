@@ -56,3 +56,13 @@ this script creates a number of utility scripts:
 ```
 >_: ninja -t clean
 ```
+
+## Running tests:
+- Tests run from src/main.c
+- running the build script with a test command runs the tests
+- E,g
+```
+>_: sh gen-build --test-arena
+>_: ninja
+>_: ./main
+```
