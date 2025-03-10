@@ -61,10 +61,13 @@ int main(int argc, char **argv)
 
     M_arena_module(Arenas);
 
-    Arena *arena = Arenas.init_arena(3);
-    M_expect(Arenas.get_free_count() == 0, "expect no calls to free when module initialized");
-    M_expect(Arenas.get_alloc_count() == 2, "expect 2 calls to alloc for every arena initialization");
-    M_expect(arena->capacity == 3 && arena->cursor == 0 && arena->data != NULL && arena->next == NULL,
+    Arena *arena = Arenas.arena_init(3);
+    M_expect(Arenas.get_free_count() == 0,
+             "expect no calls to free when module initialized");
+    M_expect(Arenas.get_alloc_count() == 2,
+             "expect 2 calls to alloc for every arena initialization");
+    M_expect(arena->capacity == 3 && arena->cursor == 0 &&
+                     arena->data != NULL && arena->next == NULL,
              "expect initialized arena values");
 
     uint8_t *a = Arenas.arena_alloc(arena, 2);
@@ -84,9 +87,11 @@ int main(int argc, char **argv)
     M_expect(
             arena->cursor == 3 && arena->capacity == 3,
             "expect previous arena's state to be unchanged after another allocation exceeds original's capacity");
-    M_expect(arena->next->cursor == 2 && arena->next->capacity == 3 && arena->next->next == NULL,
+    M_expect(arena->next->cursor == 2 && arena->next->capacity == 3 &&
+                     arena->next->next == NULL,
              "expect next arena's state after another allocation of size 2");
-    M_expect(Arenas.get_alloc_count() == 4, "expect 4 calls to alloc after another arena initialized");
+    M_expect(Arenas.get_alloc_count() == 4,
+             "expect 4 calls to alloc after another arena initialized");
 
     uint8_t *c = Arenas.arena_alloc(arena, 2);
     M_expect(c != NULL,
@@ -94,13 +99,30 @@ int main(int argc, char **argv)
     M_expect(
             arena->cursor == 3 && arena->capacity == 3,
             "expect original arena's cursor to still be unchanged after yet another arena added");
-    M_expect(arena->next->cursor == 2 && arena->next->capacity == 3,
-             "expect previous arena's state to be unchanged after allocation of another arena");
-    M_expect(arena->next->next->next == NULL && arena->next->next->cursor == 2 && arena->next->next->capacity == 3,
+    M_expect(
+            arena->next->cursor == 2 && arena->next->capacity == 3,
+            "expect previous arena's state to be unchanged after allocation of another arena");
+    M_expect(arena->next->next->next == NULL &&
+                     arena->next->next->cursor == 2 &&
+                     arena->next->next->capacity == 3,
              "expect final arena's state");
-    M_expect(Arenas.get_alloc_count() == 6, "expect 6 calls to alloc after final arena initialized");
+    M_expect(Arenas.get_alloc_count() == 6,
+             "expect 6 calls to alloc after final arena initialized");
 
-    Arenas.deinit_arena(arena);
+    Arenas.arena_reset(arena);
+    M_expect(arena->cursor == 0 && arena->next->cursor == 0 &&
+                     arena->next->next->cursor == 0,
+             "arena reset resets all cursors to 0, making them writable again");
+
+    Arenas.arena_alloc(arena, 3);
+    Arenas.arena_alloc(arena, 1);
+    M_expect(
+            arena->cursor == 3 && arena->next->cursor == 1 &&
+                    arena->next->next->cursor == 0 &&
+                    arena->next->next->next == NULL,
+            "after reset no new arenas are created and memory is reused in the expected way");
+
+    Arenas.arena_deinit(arena);
 
     M_expect(Arenas.get_alloc_count() == Arenas.get_free_count(),
              "expect call to free for every call to alloc");

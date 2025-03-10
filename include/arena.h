@@ -23,9 +23,10 @@ struct Arena {
 };
 
 struct ArenaModule {
-  Arena *(*init_arena)(size_t);
-  void (*deinit_arena)(Arena *);
+  Arena *(*arena_init)(size_t);
+  void (*arena_deinit)(Arena *);
   void *(*arena_alloc)(Arena *, size_t);
+  void (*arena_reset)(Arena *);
 #if defined(PROJECT_TEST_BUILD)
   size_t (*get_alloc_count)(void);
   size_t (*get_free_count)(void);
@@ -69,7 +70,7 @@ static void *alloc(size_t size)
   return malloc(size);
 }
 
-static void free_mem(void* ptr)
+static void free_mem(void *ptr)
 {
 #if defined(PROJECT_TEST_BUILD)
   free_count++;
@@ -77,7 +78,7 @@ static void free_mem(void* ptr)
   free(ptr);
 }
 
-static Arena *init_arena(size_t arena_size)
+static Arena *arena_init(size_t arena_size)
 {
   Arena *arena = alloc(sizeof(Arena));
   M_handle_alloc_failed(arena);
@@ -94,7 +95,7 @@ static Arena *init_arena(size_t arena_size)
   return arena;
 }
 
-static void deinit_arena(Arena *self)
+static void arena_deinit(Arena *self)
 {
   Arena *arena_iter = self;
   while (arena_iter != NULL) {
@@ -102,6 +103,13 @@ static void deinit_arena(Arena *self)
     free_mem(arena_iter->data);
     free_mem(arena_iter);
     arena_iter = arena_next;
+  }
+}
+
+static void arena_reset(Arena *self)
+{
+  for (Arena *current = self; current != NULL; current = current->next) {
+    current->cursor = 0;
   }
 }
 
@@ -118,7 +126,7 @@ static void *arena_alloc(Arena *self, size_t size)
       effective_arena = effective_arena->next;
     else {
       /** allocate another arena */
-      Arena *next = init_arena(effective_arena->capacity);
+      Arena *next = arena_init(effective_arena->capacity);
       effective_arena->next = next;
       effective_arena = next;
       break;
@@ -135,9 +143,10 @@ static void *arena_alloc(Arena *self, size_t size)
 
 void arena_module_init(ArenaModule *self)
 {
-  self->init_arena = &init_arena;
-  self->deinit_arena = &deinit_arena;
+  self->arena_init = &arena_init;
+  self->arena_deinit = &arena_deinit;
   self->arena_alloc = &arena_alloc;
+  self->arena_reset = &arena_reset;
 #if defined(PROJECT_TEST_BUILD)
   self->get_alloc_count = &get_alloc_count;
   self->get_free_count = &get_free_count;
