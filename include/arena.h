@@ -5,8 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-
-/** START HEADER SECTION */
+#include "mem_err.h"
 
 #define M_arena_module(module_label) \
   ArenaModule module_label;          \
@@ -23,10 +22,10 @@ struct Arena {
 };
 
 struct ArenaModule {
-  Arena *(*arena_init)(size_t);
-  void (*arena_deinit)(Arena *);
-  void *(*arena_alloc)(Arena *, size_t);
-  void (*arena_reset)(Arena *);
+  AllocationResult (*arena_init)(size_t, Arena **);
+  AllocationResult (*arena_deinit)(Arena *);
+  AllocationResult (*arena_alloc)(Arena *, size_t, void **);
+  AllocationResult (*arena_reset)(Arena *);
 #if defined(PROJECT_TEST_BUILD)
   size_t (*get_alloc_count)(void);
   size_t (*get_free_count)(void);
@@ -35,17 +34,26 @@ struct ArenaModule {
 
 void arena_module_init(ArenaModule *self);
 
-/** END HEADER SECTION */
-
-/** START IMPL SECTION */
+#endif // !ARENA_H_
 
 #ifdef ARENA_IMPLEMENTATION
+
+static MemoryErrorModule MemoryErrors;
+static uint8_t is_mem_err_module_init = 0;
+
+static void local_mem_err_module_init(void)
+{
+  if (!is_mem_err_module_init) {
+    is_mem_err_module_init = 1;
+    mem_err_module_init(&MemoryErrors);
+  }
+}
 
 #define M_handle_alloc_failed(ptr)                  \
   do {                                              \
     if (!(ptr)) {                                   \
       fprintf(stderr, "[FATAL] allocation failed"); \
-      exit(1);                                      \
+      return MemoryErrors.AllocationFailed;         \
     }                                               \
   } while (0)
 
@@ -78,8 +86,9 @@ static void free_mem(void *ptr)
   free(ptr);
 }
 
-static Arena *arena_init(size_t arena_size)
+static AllocationResult arena_init(size_t arena_size, Arena **out)
 {
+  local_mem_err_module_init();
   Arena *arena = alloc(sizeof(Arena));
   M_handle_alloc_failed(arena);
   memset(arena, 0, sizeof(Arena));
@@ -92,11 +101,14 @@ static Arena *arena_init(size_t arena_size)
   arena->cursor = 0;
   arena->data = data;
 
-  return arena;
+  *out = arena;
+
+  return MemoryErrors.NoError;
 }
 
-static void arena_deinit(Arena *self)
+static AllocationResult arena_deinit(Arena *self)
 {
+  local_mem_err_module_init();
   Arena *arena_iter = self;
   while (arena_iter != NULL) {
     Arena *arena_next = arena_iter->next;
@@ -104,17 +116,23 @@ static void arena_deinit(Arena *self)
     free_mem(arena_iter);
     arena_iter = arena_next;
   }
+
+  return MemoryErrors.NoError;
 }
 
-static void arena_reset(Arena *self)
+static AllocationResult arena_reset(Arena *self)
 {
+  local_mem_err_module_init();
   for (Arena *current = self; current != NULL; current = current->next) {
     current->cursor = 0;
   }
+
+  return MemoryErrors.NoError;
 }
 
-static void *arena_alloc(Arena *self, size_t size)
+static AllocationResult arena_alloc(Arena *self, size_t size, void **out)
 {
+  local_mem_err_module_init();
   if (size > self->capacity) {
     fprintf(stderr,
             "[FATAL] requested size for allocation greater than or equal to configured capacity.\n");
@@ -126,19 +144,24 @@ static void *arena_alloc(Arena *self, size_t size)
       effective_arena = effective_arena->next;
     else {
       /** allocate another arena */
-      Arena *next = arena_init(effective_arena->capacity);
+      Arena *next = NULL;
+      AllocationResult next_result = arena_init(effective_arena->capacity, &next);
+
+      if(next_result != MemoryErrors.NoError){
+        return next_result;
+      }
+
       effective_arena->next = next;
       effective_arena = next;
       break;
     }
   }
   /** cast first to uint8_t to make the void* aligned to bytes, then cast back to void* for genericity */
-  void *location_of_requested_memory =
-          (void *)((uint8_t *)effective_arena->data + effective_arena->cursor);
+  *out = (void *)((uint8_t *)effective_arena->data + effective_arena->cursor);
   /** increment the cursor to the next available section of memory */
   effective_arena->cursor += size;
 
-  return location_of_requested_memory;
+  return MemoryErrors.NoError;
 }
 
 void arena_module_init(ArenaModule *self)
@@ -153,8 +176,4 @@ void arena_module_init(ArenaModule *self)
 #endif // PROJECT_TEST_BUILD
 }
 
-#endif /** ARENA_IMPLEMENTATION */
-
-/** END IMPL SECTION */
-
-#endif // !ARENA_H_
+#endif // !ARENA_IMPLEMENTATION
