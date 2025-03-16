@@ -64,90 +64,84 @@ int main(int argc, char **argv)
   }
 
   if (tests == TEST_ALL || is_test(tests, TEST_ARENA)) {
-    /** @todo replace errors with named Memory Errors */
     M_declare_test_start("arena");
-
-    M_arena_module(Arenas);
-    M_mem_err_module(MemoryErrors);
 
     Arena *arena = NULL;
     AllocationResult op_result = MemoryErrors.NoError;
     void *data_ptr = NULL;
-    op_result = Arenas.arena_init(3, &arena);
+    op_result = ModuleArena.arena_init(3, &arena);
     M_expect(op_result == MemoryErrors.NoError &&
-                     Arenas.get_free_count() == 0 &&
-                     Arenas.get_alloc_count() == 2,
+                     ModuleArena.get_free_count() == 0 &&
+                     ModuleArena.get_alloc_count() == 2,
              "expect 0 frees and 2 allocs on initialization");
-    M_expect(arena->capacity == 3 && arena->cursor == 0 &&
-                     arena->data != NULL && arena->next == NULL,
+    M_expect(arena->_capacity == 3 && arena->_cursor == 0 &&
+                     arena->_data != NULL && arena->_next == NULL,
              "expect initialized arena values");
 
-    op_result = Arenas.arena_alloc(arena, 2, &data_ptr);
+    op_result = ModuleArena.alloc(arena, 2, &data_ptr);
     M_expect(op_result == MemoryErrors.NoError && data_ptr != NULL &&
-             arena->capacity == 3 && arena->cursor == 2 &&
-             arena->next == NULL,
-                     "expected values for arena-based allocation of size 2");
+                     arena->_capacity == 3 && arena->_cursor == 2 &&
+                     arena->_next == NULL,
+             "expected values for arena-based allocation of size 2");
 
-    op_result = Arenas.arena_alloc(arena, 1, &data_ptr);
+    op_result = ModuleArena.alloc(arena, 1, &data_ptr);
 
     M_expect(op_result == MemoryErrors.NoError && data_ptr != NULL &&
-                     arena->cursor == 3,
+                     arena->_cursor == 3,
              "additional small allocation from arena has cursor == capacity");
 
-    op_result = Arenas.arena_alloc(arena, 2, &data_ptr);
+    op_result = ModuleArena.alloc(arena, 2, &data_ptr);
     M_expect(
             op_result == MemoryErrors.NoError && data_ptr != NULL &&
-                    arena->cursor == 3 && arena->capacity == 3,
+                    arena->_cursor == 3 && arena->_capacity == 3,
             "expect previous arena's state to be unchanged after another allocation exceeds original's capacity");
 
-    M_expect(arena->next->cursor == 2 && arena->next->capacity == 3 &&
-                     arena->next->next == NULL,
+    M_expect(arena->_next->_cursor == 2 && arena->_next->_capacity == 3 &&
+                     arena->_next->_next == NULL,
              "expect next arena's state after another allocation of size 2");
-    M_expect(Arenas.get_alloc_count() == 4,
+    M_expect(ModuleArena.get_alloc_count() == 4,
              "expect 4 calls to alloc after another arena initialized");
 
-    op_result = Arenas.arena_alloc(arena, 2, &data_ptr);
+    op_result = ModuleArena.alloc(arena, 2, &data_ptr);
     M_expect(
             op_result == MemoryErrors.NoError && data_ptr != NULL &&
-                    arena->cursor == 3 && arena->capacity == 3,
+                    arena->_cursor == 3 && arena->_capacity == 3,
             "expect original arena's cursor to still be unchanged after yet another arena added");
 
     M_expect(
-            arena->next->cursor == 2 && arena->next->capacity == 3,
+            arena->_next->_cursor == 2 && arena->_next->_capacity == 3,
             "expect previous arena's state to be unchanged after allocation of another arena");
-    M_expect(arena->next->next->next == NULL &&
-                     arena->next->next->cursor == 2 &&
-                     arena->next->next->capacity == 3,
+    M_expect(arena->_next->_next->_next == NULL &&
+                     arena->_next->_next->_cursor == 2 &&
+                     arena->_next->_next->_capacity == 3,
              "expect final arena's state");
-    M_expect(Arenas.get_alloc_count() == 6,
+    M_expect(ModuleArena.get_alloc_count() == 6,
              "expect 6 calls to alloc after final arena initialized");
 
-    op_result = Arenas.arena_reset(arena);
-    M_expect(op_result == MemoryErrors.NoError && arena->cursor == 0 &&
-                     arena->next->cursor == 0 && arena->next->next->cursor == 0,
+    op_result = ModuleArena.reset(arena);
+    M_expect(op_result == MemoryErrors.NoError && arena->_cursor == 0 &&
+                     arena->_next->_cursor == 0 && arena->_next->_next->_cursor == 0,
              "arena reset resets all cursors to 0, making them writable again");
 
-    op_result = Arenas.arena_alloc(arena, 3, &data_ptr);
-    op_result = Arenas.arena_alloc(arena, 1, &data_ptr);
+    op_result = ModuleArena.alloc(arena, 3, &data_ptr);
+    op_result = ModuleArena.alloc(arena, 1, &data_ptr);
     M_expect(
             op_result == MemoryErrors.NoError && data_ptr != NULL &&
-                    arena->cursor == 3 && arena->next->cursor == 1 &&
-                    arena->next->next->cursor == 0 &&
-                    arena->next->next->next == NULL,
+                    arena->_cursor == 3 && arena->_next->_cursor == 1 &&
+                    arena->_next->_next->_cursor == 0 &&
+                    arena->_next->_next->_next == NULL,
             "after reset no new arenas are created and memory is reused in the expected way");
 
-    op_result = Arenas.arena_deinit(arena);
+    op_result = ModuleArena.arena_deinit(arena);
 
     M_expect(op_result == MemoryErrors.NoError &&
-                     Arenas.get_alloc_count() == Arenas.get_free_count(),
+                     ModuleArena.get_alloc_count() == ModuleArena.get_free_count(),
              "expect call to free for every call to alloc");
 
     M_declare_test_end("arena");
   }
   if (tests == TEST_ALL || is_test(tests, TEST_BUMP)) {
     M_declare_test_start("arena");
-    M_bump_module(Bumps);
-    M_mem_err_module(MemoryErrors);
 
     Bump bump;
     size_t size = 3;
@@ -155,21 +149,21 @@ int main(int argc, char **argv)
     void *return_addr = NULL;
     AllocationResult op_result = MemoryErrors.NoError;
 
-    op_result = Bumps.bump_init(&bump, data, size);
-    M_expect(op_result == MemoryErrors.NoError && bump.data == data &&
-                     bump.cursor == 0 && bump.capacity == 3,
+    op_result = ModuleBump.bump_init(&bump, data, size);
+    M_expect(op_result == MemoryErrors.NoError && bump._data == data &&
+                     bump._cursor == 0 && bump._capacity == 3,
              "bump should be initialized in expected way");
-    op_result = Bumps.bump_alloc(&bump, 1, &return_addr);
-    M_expect(op_result == MemoryErrors.NoError && bump.cursor == 1,
+    op_result = ModuleBump.alloc(&bump, 1, &return_addr);
+    M_expect(op_result == MemoryErrors.NoError && bump._cursor == 1,
              "bump should increment cursor");
-    op_result = Bumps.bump_alloc(&bump, 2, &return_addr);
-    M_expect(op_result == MemoryErrors.NoError && bump.cursor == 3,
+    op_result = ModuleBump.alloc(&bump, 2, &return_addr);
+    M_expect(op_result == MemoryErrors.NoError && bump._cursor == 3,
              "bump should increment cursor again");
-    op_result = Bumps.bump_alloc(&bump, 1, &return_addr);
+    op_result = ModuleBump.alloc(&bump, 1, &return_addr);
     M_expect(op_result == MemoryErrors.MaximumCapacityExceeded,
              "another bump should return NULL, because capacity was exceeded");
-    op_result = Bumps.bump_reset(&bump);
-    M_expect(op_result == MemoryErrors.NoError && bump.cursor == 0,
+    op_result = ModuleBump.reset(&bump);
+    M_expect(op_result == MemoryErrors.NoError && bump._cursor == 0,
              "bump should have 0 cursor after reset");
 
     M_declare_test_end("arena");
